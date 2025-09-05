@@ -25,6 +25,9 @@ model Property {
   transaction String
   type        String?
   images      String[] @default([])
+  bedrooms    Int? // ✅ número de quartos
+  bathrooms   Int? // ✅ número de banheiros
+  area        Float? // ✅ área em m²
   createdAt   DateTime @default(now())
 }
 

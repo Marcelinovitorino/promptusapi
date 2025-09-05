@@ -24,15 +24,39 @@ export async function getProperty(req, res) {
 }
 
 export async function createProperty(req, res) {
-  const { title, description, price, location, transaction, type } = req.body;
+  const {
+    title,
+    description,
+    price,
+    location,
+    transaction,
+    type,
+    bedrooms,
+    bathrooms,
+    area,
+  } = req.body;
 
-  // Pega URLs do Cloudinary
+  // URLs vindas do Cloudinary
   const images = req.files?.map((f) => f.path) || [];
 
-  // Converte price para Float ou mantém null se inválido
   const parsedPrice =
     price !== undefined && price !== null && price !== ""
       ? parseFloat(price)
+      : null;
+
+  const parsedBedrooms =
+    bedrooms !== undefined && bedrooms !== null && bedrooms !== ""
+      ? parseInt(bedrooms)
+      : null;
+
+  const parsedBathrooms =
+    bathrooms !== undefined && bathrooms !== null && bathrooms !== ""
+      ? parseInt(bathrooms)
+      : null;
+
+  const parsedArea =
+    area !== undefined && area !== null && area !== ""
+      ? parseFloat(area)
       : null;
 
   const prop = await prisma.property.create({
@@ -43,6 +67,9 @@ export async function createProperty(req, res) {
       location,
       transaction,
       type,
+      bedrooms: isNaN(parsedBedrooms) ? null : parsedBedrooms,
+      bathrooms: isNaN(parsedBathrooms) ? null : parsedBathrooms,
+      area: isNaN(parsedArea) ? null : parsedArea,
       images,
     },
   });
@@ -57,14 +84,12 @@ export async function updateProperty(req, res) {
   const prop = await prisma.property.findUnique({ where: { id } });
   if (!prop) return res.status(404).json({ error: "Imóvel não encontrado" });
 
-  // Mantém as imagens já salvas + novas do Cloudinary
   let images = prop.images ?? [];
   if (req.files && req.files.length) {
     const newImages = req.files.map((f) => f.path);
     images = [...images, ...newImages];
   }
 
-  // Converte price para Float se existir, senão mantém o preço atual
   const parsedPrice =
     payload.price !== undefined &&
     payload.price !== null &&
@@ -72,11 +97,33 @@ export async function updateProperty(req, res) {
       ? parseFloat(payload.price)
       : prop.price;
 
+  const parsedBedrooms =
+    payload.bedrooms !== undefined &&
+    payload.bedrooms !== null &&
+    payload.bedrooms !== ""
+      ? parseInt(payload.bedrooms)
+      : prop.bedrooms;
+
+  const parsedBathrooms =
+    payload.bathrooms !== undefined &&
+    payload.bathrooms !== null &&
+    payload.bathrooms !== ""
+      ? parseInt(payload.bathrooms)
+      : prop.bathrooms;
+
+  const parsedArea =
+    payload.area !== undefined && payload.area !== null && payload.area !== ""
+      ? parseFloat(payload.area)
+      : prop.area;
+
   const updated = await prisma.property.update({
     where: { id },
     data: {
       ...payload,
       price: isNaN(parsedPrice) ? prop.price : parsedPrice,
+      bedrooms: isNaN(parsedBedrooms) ? prop.bedrooms : parsedBedrooms,
+      bathrooms: isNaN(parsedBathrooms) ? prop.bathrooms : parsedBathrooms,
+      area: isNaN(parsedArea) ? prop.area : parsedArea,
       images,
     },
   });
@@ -89,7 +136,6 @@ export async function deleteProperty(req, res) {
   const prop = await prisma.property.findUnique({ where: { id } });
   if (!prop) return res.status(404).json({ error: "Imóvel não encontrado" });
 
-  // Apenas remove o registro, imagens continuam no Cloudinary
   await prisma.property.delete({ where: { id } });
   res.json({ ok: true });
 }
